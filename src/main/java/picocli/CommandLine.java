@@ -249,15 +249,17 @@ public class CommandLine {
         private final Class<?> type;
         private final CommandSpec parent;
         private final String name;
+        private final List<String> registeredAliases;
         private String bundleBaseName;
         private ResourceBundle bundle;
         private final Map<Object, SubcommandSetting> settings = new LinkedHashMap<Object, SubcommandSetting>();
         private boolean applyModelTransformations;
 
-        private LazySubcommand(Class<?> type, CommandSpec parent, String name) {
+        private LazySubcommand(Class<?> type, CommandSpec parent, String name, String[] aliases) {
             this.type = type;
             this.parent = parent;
             this.name = name;
+            this.registeredAliases = Arrays.asList(aliases);
             this.bundleBaseName = parent.resourceBundleBaseName();
             this.bundle = parent.resourceBundle();
         }
@@ -302,6 +304,12 @@ public class CommandLine {
             lazy.parent.attachSubcommand(lazy.name, this, tracer(), lazy);
             spec.injectParentCommandWithMixins(lazy.parent);
             if (lazy.applyModelTransformations) { applyModelTransformations(); }
+            for (String alias : commandSpec.aliases()) {
+                if (!lazy.registeredAliases.contains(alias)) {
+                    throw new InitializationException("Alias '" + alias + "' of subcommand '" + lazy.name + "' is not in its @Command(aliases), " +
+                            "so it cannot be matched before the subcommand is built with picocli.lazy.subcommands. Declare it in @Command(aliases).");
+                }
+            }
             for (SubcommandSetting setting : lazy.settings.values()) {
                 setting.applyTo(this);
             }
@@ -6730,7 +6738,7 @@ public class CommandLine {
                 String actualName = interpolator.interpolateCommandName(name);
                 Tracer t = CommandLine.tracer();
                 if (t.isDebug()) {t.debug("Adding lazy subcommand '%s' to '%s'", actualName, this.qualifiedName());}
-                CommandLine subCommandLine = new CommandLine(new LazySubcommand(type, this, actualName), factory);
+                CommandLine subCommandLine = new CommandLine(new LazySubcommand(type, this, actualName, aliases), factory);
                 putSubcommandName(actualName, subCommandLine);
                 for (String alias : aliases) {
                     putAlias(alias, actualName, subCommandLine);

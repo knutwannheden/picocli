@@ -7938,7 +7938,7 @@ This can improve the startup time of applications with many subcommands.
 The subcommand then gets the inherited options, help options and resource bundle it gets when built eagerly, and the settings applied to its parent since.
 Attributes of a `scope = INHERIT` parent are those the parent has at that point.
 Errors in its declaration are reported at that point, not from the `CommandLine` constructor.
-Aliases that a subcommand gets from a mixin or a model transformer are recognized once it is built.
+A subcommand with an alias from a mixin or a model transformer fails to build, because that alias cannot be matched until the subcommand is built. Declare such an alias in `@Command(aliases)`.
 Subcommands with an alias that contains variables are built immediately.
 
 === Subcommands as Methods

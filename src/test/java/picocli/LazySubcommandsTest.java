@@ -331,6 +331,32 @@ public class LazySubcommandsTest {
         assertTrue(result.subcommand().hasMatchedOption("--added"));
     }
 
+    @Command(aliases = "mx")
+    static class AliasMixin {
+    }
+
+    @Command(name = "mixed")
+    static class Mixed implements Runnable {
+        @CommandLine.Mixin AliasMixin aliasMixin;
+        public void run() { }
+    }
+
+    @Command(name = "mixes", subcommands = Mixed.class)
+    static class Mixes implements Runnable {
+        public void run() { }
+    }
+
+    @Test
+    public void anAliasFromAMixinFailsTheBuild() {
+        System.setProperty("picocli.lazy.subcommands", "true");
+        try {
+            new CommandLine(new Mixes()).parseArgs("mixed");
+            fail("an alias that only the built subcommand knows cannot be matched before it is built");
+        } catch (CommandLine.InitializationException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("'mx'"));
+        }
+    }
+
     @Command(name = "beta")
     static class OtherBeta implements Runnable {
         public void run() { }
